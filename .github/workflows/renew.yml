@@ -9,22 +9,25 @@ on:
 jobs:
   renew:
     runs-on: ubuntu-latest
-    
+
+    permissions:
+      contents: write   # 确保可以 git push
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        
+
     - name: Install Dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y xvfb
         npm install
         npx playwright install-deps chrome
-      
+
     - name: Run Renew Script
       env:
         # 将 USERS_JSON 配置在 GitHub Repository Secrets 中
@@ -42,3 +45,15 @@ jobs:
       with:
         name: screenshots
         path: screenshots/
+
+    # ==================== 新增 Step ====================
+    - name: Keep Actions Alive (update time.txt)
+      run: |
+        echo "$(date '+%Y-%m-%d %H:%M:%S')" > time.txt
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add time.txt
+        git commit -m "Update time.txt to keep Actions alive" || echo "No changes to commit"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
